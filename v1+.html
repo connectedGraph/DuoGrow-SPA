@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="theme-color" content="#f7efe7" />
+  <title>妈妈亲子英语</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=Noto+Serif+SC:wght@600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true">
+    <span id="toastIcon">✨</span>
+    <span id="toastText">提示</span>
+  </div>
+
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand-lockup">
+        <span class="brand-kicker">Mom & Kid English</span>
+        <strong class="brand-title">亲子英语1</strong>
+      </div>
+      <div class="header-actions">
+        <button class="icon-circle-btn github-icon-btn" type="button" aria-label="打开 GitHub 开源仓库信息" title="GitHub 开源仓库" data-action="open-github">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 2.2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.1-1.47-1.1-1.47-.9-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.9.83.09-.64.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03A9.45 9.45 0 0 1 12 6.2c.85 0 1.7.11 2.5.34 1.9-1.3 2.74-1.03 2.74-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.86v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2.2Z"></path>
+          </svg>
+        </button>
+        <button id="usageGuideBtn" class="mini-pill-btn help-pill-btn" type="button" data-action="open-guide">
+          <span>❓</span>
+          <span>如何使用学习页？</span>
+        </button>
+        <button class="icon-circle-btn" type="button" aria-label="填写密码" data-action="open-settings">🔐</button>
+      </div>
+    </header>
+
+    <main class="main-scroll" id="mainScroll">
+      <section class="panel active" id="tab-learn">
+        <section class="hero-panel is-compact">
+          <div class="composer">
+            <label class="field-kicker" for="topicInput">
+              <span>Today</span>
+              <span>今天想学什么</span>
+            </label>
+            <input
+              id="topicInput"
+              class="topic-input"
+              type="text"
+              autocomplete="off"
+              placeholder="比如：洗澡、哄睡、穿鞋、带宝宝去公园"
+            />
+            <div class="composer-meta">
+              <div class="composer-hint">建议从最常重复的场景开始，最容易形成开口习惯。</div>
+            </div>
+            <div class="generate-actions">
+              <button id="generateFiveBtn" class="btn btn-primary generate-btn" type="button" data-action="generate" data-mode="compact">
+                <span class="spinner"></span>
+                <span class="btn-label">生成 5 句</span>
+              </button>
+              <button id="generateTenBtn" class="btn btn-secondary generate-btn" type="button" data-action="generate" data-mode="rich">
+                <span class="spinner"></span>
+                <span class="btn-label">生成 10 句</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="quickChips" class="quick-topics"></div>
+        </section>
+
+        <section id="learnSnapshot" class="state-chip-strip hidden"></section>
+
+        <div id="loadingSkeleton" class="loading-stack">
+          <div class="empty-card generation-wait-card">
+            <div class="section-kicker">
+              <span>⏳</span>
+              <span>正在准备</span>
+            </div>
+            <strong>新表达还在生成，先练几题也刚好。</strong>
+            <p>生成有时会多等一会儿。你可以先去练习页面，把仓库里的句子过一轮；新内容好了会自动保存回来。</p>
+            <div class="action-row">
+              <button class="btn btn-primary" type="button" data-action="switch-tab" data-tab="review">去练习页面</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="lessonContainer"></div>
+      </section>
+
+      <section class="panel" id="tab-book">
+        <section class="section-shell">
+          <div class="section-kicker">
+            <span>📦</span>
+            <span>仓库</span>
+          </div>
+          <h2>保存好的主题，随时回来复看。</h2>
+          <p class="section-copy">
+            保存可以复看，重复听。也可以打开图片，长按保存到相册。
+          </p>
+        </section>
+
+        <section class="toolbar-card">
+          <div class="toolbar-grid">
+            <input id="searchInput" class="toolbar-field" type="text" placeholder="搜索英文、中文或场景" />
+            <select id="topicFilter" class="toolbar-field">
+              <option value="all">全部主题</option>
+            </select>
+            <div class="toolbar-actions">
+              <button class="btn btn-secondary" type="button" data-action="clear-search">重置筛选</button>
+              <button class="btn btn-ghost" type="button" data-action="switch-tab" data-tab="learn">去生成</button>
+            </div>
+          </div>
+        </section>
+
+        <div id="bookSummary" class="stats-row"></div>
+        <div id="bookContainer"></div>
+      </section>
+
+      <section class="panel" id="tab-review">
+        <section class="section-shell">
+          <div class="section-kicker">
+            <span>🎯</span>
+            <span>轻复习</span>
+          </div>
+          <h2>不背书，用熟悉的节奏把句子留住。</h2>
+          <p class="section-copy">
+            这轮会优先抽你保存过、又比较值得重复的表达。答错也没关系，重点是形成反应。
+          </p>
+        </section>
+
+        <section class="review-launch">
+          <div class="review-launch-text">
+            <strong id="reviewLaunchTitle">先保存一组，再开始复习</strong>
+            <span id="reviewLaunchCopy">保存到仓库后会自动从高频表达里抽题。</span>
+          </div>
+          <button id="startReviewBtn" class="btn btn-primary" type="button" data-action="start-review">开始复习</button>
+        </section>
+
+        <div id="reviewContainer"></div>
+      </section>
+
+      <section class="panel" id="tab-play">
+        <section class="section-shell">
+          <div class="section-kicker">
+            <span>🖼</span>
+            <span>记忆卡片</span>
+          </div>
+          <h2>把今天最想说的一句，做成一张可保存的卡片。</h2>
+          <p class="section-copy">
+            点开保存图，长按存到相册，随手翻一翻就能提醒自己开口。
+          </p>
+        </section>
+
+        <div id="playContainer"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="nav-btn active" type="button" data-action="switch-tab" data-tab="learn">
+        <span class="nav-icon">✨</span>
+        <span class="nav-label">学习</span>
+      </button>
+      <button class="nav-btn" type="button" data-action="switch-tab" data-tab="book">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">仓库</span>
+      </button>
+      <button class="nav-btn" type="button" data-action="switch-tab" data-tab="review">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">复习</span>
+      </button>
+      <button class="nav-btn" type="button" data-action="switch-tab" data-tab="play">
+        <span class="nav-icon">🖼</span>
+        <span class="nav-label">卡片</span>
+      </button>
+    </nav>
+
+    <div id="sheetOverlay" class="sheet-overlay" data-action="close-settings"></div>
+    <div id="guideOverlay" class="sheet-overlay" data-action="close-guide"></div>
+    <div id="imageOverlay" class="sheet-overlay" data-action="close-image-preview"></div>
+    <div id="deleteOverlay" class="sheet-overlay" data-action="close-delete-confirm"></div>
+    <div id="doubaoOverlay" class="sheet-overlay" data-action="close-doubao"></div>
+    <div id="githubOverlay" class="sheet-overlay" data-action="close-github"></div>
+
+    <section id="guideSheet" class="sheet" aria-label="使用介绍" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong id="guideTitle" class="sheet-title">如何使用学习页</strong>
+        <button class="icon-circle-btn" type="button" aria-label="关闭使用介绍" data-action="close-guide">✕</button>
+      </div>
+      <div id="guideContent" class="usage-guide"></div>
+      <div class="sheet-actions single">
+        <button class="btn btn-primary" type="button" data-action="close-guide">知道了</button>
+      </div>
+    </section>
+
+    <section id="githubSheet" class="sheet" aria-label="GitHub 开源仓库" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong class="sheet-title">GitHub 开源仓库</strong>
+        <button class="icon-circle-btn" type="button" aria-label="关闭 GitHub 仓库信息" data-action="close-github">✕</button>
+      </div>
+      <div class="github-hero">
+        <div class="section-kicker">
+          <span>MIT</span>
+          <span>开源项目</span>
+        </div>
+        <div class="github-repo-name">AIED-DuoGrow-SaaS</div>
+        <p class="sheet-copy">
+          一个从母亲节礼物长出来的亲子英语工具。项目提供单 HTML 版本和拆分代码版本，静态调用 LLM，BYOK，数据留在浏览器 localStorage。
+        </p>
+        <div class="github-stat-row">
+          <div>
+            <div class="github-stat-label">GitHub Stars</div>
+            <div id="githubStarHint" class="github-stat-hint">正在读取 GitHub 信息</div>
+          </div>
+          <strong id="githubStarCount" class="github-stat-value">…</strong>
+        </div>
+      </div>
+      <div class="github-feature-list">
+        <span>灵感来源：2026.5.10 送给母亲的母亲节礼物。</span>
+        <span>适合中老年人、带娃家长和需要手机端复听复习的英语学习场景。</span>
+        <span>文本生成走 OpenAI-compatible API；语音走外部 TTS API，以保证手机端和微信 WebView 可用性。</span>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" type="button" data-action="close-github">稍后再看</button>
+        <button class="btn btn-primary" type="button" data-action="open-github-repo">打开 GitHub 仓库</button>
+      </div>
+    </section>
+
+    <section id="imageSheet" class="sheet" aria-label="保存图片" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong id="imageSheetTitle" class="sheet-title">保存图片</strong>
+        <button class="icon-circle-btn" type="button" aria-label="关闭保存图片" data-action="close-image-preview">✕</button>
+      </div>
+      <p id="imageSheetCopy" class="sheet-copy">长按下面这张图，保存到相册。之后回来复看，也可以在仓库里重复听。</p>
+      <div id="imagePreviewContent" class="preview-image-wrap"></div>
+      <div class="sheet-actions single">
+        <button class="btn btn-primary" type="button" data-action="close-image-preview">知道了</button>
+      </div>
+    </section>
+
+    <section id="settingsSheet" class="sheet" aria-label="填写密码" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong class="sheet-title">填写密码</strong>
+        <button class="icon-circle-btn" type="button" aria-label="关闭密码填写" data-action="close-settings">✕</button>
+      </div>
+      <p class="sheet-copy">
+        妈妈把我给你的整串密码填在这里就可以。格式像 sk-xxxxx-yyyy，会同时用于生成句子和播放读音。
+      </p>
+      <div class="sheet-grid">
+        <div class="sheet-field">
+          <label for="apiKeyInput">完整密码</label>
+          <input
+            id="apiKeyInput"
+            type="password"
+            placeholder="例如：sk-xxxxx-yyyy"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" type="button" data-action="close-settings">稍后再说</button>
+        <button id="saveConfigBtn" class="btn btn-primary" type="button" data-action="save-config">保存并关闭</button>
+      </div>
+    </section>
+
+    <section id="deleteConfirmSheet" class="sheet" aria-label="删除仓库主题" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong id="deleteConfirmTitle" class="sheet-title">删除这组？</strong>
+        <button class="icon-circle-btn" type="button" aria-label="关闭删除确认" data-action="close-delete-confirm">✕</button>
+      </div>
+      <p id="deleteConfirmCopy" class="sheet-copy danger-copy">
+        删除后会直接从这个浏览器的仓库 localStorage 移除，不能在应用里恢复。
+      </p>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" type="button" data-action="close-delete-confirm">先保留</button>
+        <button class="btn btn-primary" type="button" data-action="confirm-delete-lesson">确认删除</button>
+      </div>
+    </section>
+
+    <section id="doubaoSheet" class="sheet" aria-label="生成豆包一对一训练" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong class="sheet-title">生成豆包一对一训练</strong>
+        <button class="icon-circle-btn" type="button" aria-label="关闭豆包训练提示" data-action="close-doubao">✕</button>
+      </div>
+      <p class="sheet-copy">
+        点击复制并跳转豆包，打开后粘贴魔法指令，就可以让豆包按这组句子陪你做中译英小任务。
+      </p>
+      <textarea id="doubaoPromptText" class="doubao-prompt-box" readonly></textarea>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" type="button" data-action="close-doubao">稍后再说</button>
+        <button class="btn btn-primary" type="button" data-action="copy-open-doubao">复制并跳转豆包</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
