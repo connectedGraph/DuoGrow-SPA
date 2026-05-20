@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0e17" />
+  <title>DuoGrow Quest</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true">
+    <span id="toastIcon"></span>
+    <span id="toastText">提示</span>
+  </div>
+
+  <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand-lockup">
+        <span class="brand-kicker">DuoGrow Quest</span>
+        <strong class="brand-title">亲子英语</strong>
+      </div>
+      <div class="header-right">
+        <button class="theme-toggle" type="button" data-action="toggle-theme" aria-label="切换主题" title="切换亮/暗主题">
+          <span class="theme-icon" id="themeIcon">🌙</span>
+        </button>
+        <div class="xp-badge" id="xpBadge">
+          <span class="xp-icon">⚡</span>
+          <span class="xp-value" id="xpValue">0</span>
+          <span class="xp-label">XP</span>
+        </div>
+        <div class="streak-badge" id="streakBadge">
+          <span class="streak-icon">🔥</span>
+          <span class="streak-value" id="streakValue">0</span>
+        </div>
+        <button class="icon-btn" type="button" aria-label="使用教程" data-action="open-guide" title="使用教程">❓</button>
+      </div>
+    </header>
+
+    <div class="level-bar-wrap">
+      <div class="level-bar">
+        <div class="level-fill" id="levelFill" style="width: 0%"></div>
+      </div>
+      <span class="level-text" id="levelText">Lv.1 新手妈妈</span>
+    </div>
+
+    <main class="main-scroll" id="mainScroll">
+      <section class="panel active" id="tab-learn">
+        <div id="learnCoreWord" class="learn-core-word hidden"></div>
+
+        <div id="learnInputWrap" class="learn-input-wrap">
+          <button class="learn-input-toggle" type="button" data-action="toggle-learn-input">
+            <span class="lit-label">生成新表达</span>
+            <span class="lit-arrow" id="learnInputArrow">▾</span>
+          </button>
+          <div id="learnInputBody" class="learn-input-body">
+            <div class="learn-input-body-inner">
+              <section class="quest-card compact">
+                <div class="quest-input-row">
+                  <input id="topicInput" class="quest-input" type="text" autocomplete="off" placeholder="输入场景：洗澡、哄睡、穿鞋..." />
+                </div>
+                <div class="quest-actions">
+                  <button id="generateFiveBtn" class="btn btn-primary quest-btn" type="button" data-action="generate" data-mode="compact">
+                    <span class="spinner"></span>
+                    <span class="btn-label">⚡ 5 句</span>
+                  </button>
+                  <button id="generateTenBtn" class="btn btn-secondary quest-btn" type="button" data-action="generate" data-mode="rich">
+                    <span class="spinner"></span>
+                    <span class="btn-label">🎯 10 句</span>
+                  </button>
+                </div>
+              </section>
+              <div id="quickChips" class="quick-topics"></div>
+            </div>
+          </div>
+        </div>
+
+        <section id="learnSnapshot" class="state-chip-strip hidden"></section>
+
+        <div id="loadingSkeleton" class="loading-stack">
+          <div class="quest-card generation-wait-card">
+            <div class="pulse-dot"></div>
+            <strong>正在生成新表达...</strong>
+            <p>可以先去挑战页面练几题。</p>
+            <button class="btn btn-ghost" type="button" data-action="switch-tab" data-tab="review">去挑战</button>
+          </div>
+        </div>
+
+        <div id="lessonContainer"></div>
+      </section>
+
+      <section class="panel" id="tab-book">
+        <section class="toolbar-card">
+          <div class="toolbar-grid">
+            <input id="searchInput" class="toolbar-field" type="text" placeholder="搜索..." />
+            <select id="topicFilter" class="toolbar-field">
+              <option value="all">全部主题</option>
+            </select>
+            <button class="btn btn-ghost" type="button" data-action="clear-search">重置</button>
+          </div>
+        </section>
+
+        <div id="bookSummary" class="stats-row"></div>
+        <div id="bookContainer"></div>
+      </section>
+
+      <section class="panel" id="tab-review">
+        <section class="review-launch">
+          <button id="startReviewBtn" class="btn btn-secondary review-mode-btn" type="button" data-action="start-review" data-mode="speed">⚡ 速答</button>
+          <button class="btn btn-secondary review-mode-btn" type="button" data-action="start-review" data-mode="listen">🎧 听力</button>
+          <button class="btn btn-secondary review-mode-btn" type="button" data-action="start-review" data-mode="translate">📝 翻译</button>
+          <span id="reviewLaunchTitle" class="review-launch-hint"></span>
+          <span id="reviewLaunchCopy" class="review-launch-hint"></span>
+        </section>
+
+        <div id="reviewContainer"></div>
+      </section>
+
+      <section class="panel" id="tab-play">
+        <div id="playContainer"></div>
+      </section>
+
+      <section class="panel" id="tab-profile">
+        <div id="profileContainer"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="nav-btn active" type="button" data-action="switch-tab" data-tab="learn">
+        <span class="nav-icon">⚡</span>
+        <span class="nav-label">探索</span>
+      </button>
+      <button class="nav-btn" type="button" data-action="switch-tab" data-tab="book">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">仓库</span>
+      </button>
+      <button class="nav-btn" type="button" data-action="switch-tab" data-tab="review">
+        <span class="nav-icon">⚔️</span>
+        <span class="nav-label">竞技</span>
+      </button>
+      <button class="nav-btn" type="button" data-action="switch-tab" data-tab="play">
+        <span class="nav-icon">💬</span>
+        <span class="nav-label">消息</span>
+      </button>
+      <button class="nav-btn" type="button" data-action="switch-tab" data-tab="profile">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">我的</span>
+      </button>
+    </nav>
+
+    <!-- Overlays -->
+    <div id="sheetOverlay" class="sheet-overlay" data-action="close-settings"></div>
+    <div id="guideOverlay" class="sheet-overlay" data-action="close-guide"></div>
+    <div id="imageOverlay" class="sheet-overlay" data-action="close-image-preview"></div>
+    <div id="deleteOverlay" class="sheet-overlay" data-action="close-delete-confirm"></div>
+    <div id="doubaoOverlay" class="sheet-overlay" data-action="close-doubao"></div>
+    <div id="githubOverlay" class="sheet-overlay" data-action="close-github"></div>
+    <div id="sentenceOverlay" class="sheet-overlay" data-action="close-sentence-detail"></div>
+
+    <!-- Sentence Detail Sheet -->
+    <section id="sentenceSheet" class="sheet" aria-label="句子详情" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong id="sentenceSheetTitle" class="sheet-title">句子详情</strong>
+        <button class="icon-btn" type="button" aria-label="关闭" data-action="close-sentence-detail">✕</button>
+      </div>
+      <div id="sentenceDetailContent" class="sentence-detail-body"></div>
+      <div class="sheet-actions single">
+        <button class="btn btn-primary" type="button" data-action="close-sentence-detail">关闭</button>
+      </div>
+    </section>
+
+    <!-- Settings Sheet -->
+    <section id="settingsSheet" class="sheet" aria-label="填写密码" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong class="sheet-title">🔑 解锁能力</strong>
+        <button class="icon-btn" type="button" aria-label="关闭" data-action="close-settings">✕</button>
+      </div>
+      <p class="sheet-copy">把密码填在这里就能解锁生成和语音能力。格式像 sk-xxxxx-yyyy。</p>
+      <div class="sheet-grid">
+        <div class="sheet-field">
+          <label for="apiKeyInput">完整密码</label>
+          <input id="apiKeyInput" type="password" placeholder="例如：sk-xxxxx-yyyy" autocomplete="off" autocapitalize="off" spellcheck="false" />
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" type="button" data-action="close-settings">稍后</button>
+        <button id="saveConfigBtn" class="btn btn-primary" type="button" data-action="save-config">保存</button>
+      </div>
+    </section>
+
+    <!-- Guide Sheet -->
+    <section id="guideSheet" class="sheet" aria-label="使用介绍" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong id="guideTitle" class="sheet-title">如何使用</strong>
+        <button class="icon-btn" type="button" aria-label="关闭" data-action="close-guide">✕</button>
+      </div>
+      <div id="guideContent" class="usage-guide"></div>
+      <div class="sheet-actions single">
+        <button class="btn btn-primary" type="button" data-action="close-guide">知道了</button>
+      </div>
+    </section>
+
+    <!-- Image Sheet -->
+    <section id="imageSheet" class="sheet" aria-label="保存图片" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong id="imageSheetTitle" class="sheet-title">保存图片</strong>
+        <button class="icon-btn" type="button" aria-label="关闭" data-action="close-image-preview">✕</button>
+      </div>
+      <p id="imageSheetCopy" class="sheet-copy">长按下面这张图，保存到相册。</p>
+      <div id="imagePreviewContent" class="preview-image-wrap"></div>
+      <div class="sheet-actions single">
+        <button class="btn btn-primary" type="button" data-action="close-image-preview">知道了</button>
+      </div>
+    </section>
+
+    <!-- Delete Confirm Sheet -->
+    <section id="deleteConfirmSheet" class="sheet" aria-label="删除确认" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong id="deleteConfirmTitle" class="sheet-title">删除这组？</strong>
+        <button class="icon-btn" type="button" aria-label="关闭" data-action="close-delete-confirm">✕</button>
+      </div>
+      <p id="deleteConfirmCopy" class="sheet-copy danger-copy">删除后不能在应用里恢复。</p>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" type="button" data-action="close-delete-confirm">保留</button>
+        <button class="btn btn-danger" type="button" data-action="confirm-delete-lesson">确认删除</button>
+      </div>
+    </section>
+
+    <!-- Doubao Sheet -->
+    <section id="doubaoSheet" class="sheet" aria-label="豆包训练" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong class="sheet-title">豆包一对一训练</strong>
+        <button class="icon-btn" type="button" aria-label="关闭" data-action="close-doubao">✕</button>
+      </div>
+      <p class="sheet-copy">复制并跳转豆包，粘贴指令开始中译英小任务。</p>
+      <textarea id="doubaoPromptText" class="doubao-prompt-box" readonly></textarea>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" type="button" data-action="close-doubao">稍后</button>
+        <button class="btn btn-primary" type="button" data-action="copy-open-doubao">复制并跳转</button>
+      </div>
+    </section>
+
+    <!-- GitHub Sheet -->
+    <section id="githubSheet" class="sheet" aria-label="GitHub" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong class="sheet-title">GitHub 开源</strong>
+        <button class="icon-btn" type="button" aria-label="关闭" data-action="close-github">✕</button>
+      </div>
+      <div class="github-hero">
+        <div class="github-repo-name">AIED-DuoGrow-SaaS</div>
+        <p class="sheet-copy">MIT 开源亲子英语工具。</p>
+        <div class="github-stat-row">
+          <span id="githubStarHint">正在读取</span>
+          <strong id="githubStarCount">…</strong>
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" type="button" data-action="close-github">关闭</button>
+        <button class="btn btn-primary" type="button" data-action="open-github-repo">打开仓库</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="topic.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
