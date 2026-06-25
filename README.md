@@ -1,12 +1,27 @@
-# AIED-DuoGrow-SaaS
+<p align="center">
+  <img src="assets/icon-only.png" width="128" height="128" alt="Duogrow Logo" style="border-radius: 28px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);" />
+</p>
 
-一个面向中年人、老年人和带娃家长的英语学习小工具。它把日常场景转成可以直接开口的短句，适合亲子英语、手机端复听、轻量复习和每天留一张记忆卡片。
+<h1 align="center">Duogrow</h1>
+
+<p align="center">
+  <strong>一个面向中年人、老年人和带娃家长的极简、游戏化开口英语口语学习小工具。</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/license/connectedGraph/DuoGrow-SPA?style=flat-square&color=blue" alt="license" />
+  <img src="https://img.shields.io/github/stars/connectedGraph/DuoGrow-SPA?style=flat-square&color=gold" alt="stars" />
+  <img src="https://img.shields.io/github/forks/connectedGraph/DuoGrow-SPA?style=flat-square&color=orange" alt="forks" />
+  <img src="https://img.shields.io/badge/Platform-Web%20%7C%20Android-blueviolet?style=flat-square" alt="platform" />
+</p>
+
+本项目定位为极简、低成本的口语学习与日常表达练习工具，旨在帮助普通家庭（如父母、孩子）轻松练习日常生活场景中的高频短句，让 AI 成为温暖、可复听、可打卡陪伴的口语助教。
 
 > 💡 **灵感来源**
-> 本项目来源于 `2026.5.10` 送给母亲的母亲节礼物。项目定位为 MIT 开源项目，希望让一个普通家庭也能用很低的成本，把 AI 变成可保存、可复听、可慢慢练习的学习陪伴。
-> *（虽然开发完后冷静下来，感觉学习模式还是略显单一。市面上估计早就有类似的成熟软件了，就当是一次 Vibe Coding 的练手吧。不得不说我可真会浪费时间 ── 导师催着的 NLP 任务明天就要交了，大晚上我竟然还在这里感动自己地写 README 😭）*
+> 本项目最初开发于 `2026.5.10`，作为送给母亲的母亲节礼物。后来对整体 UI 做了游戏化视觉重设计（深色霓虹风格）并使用 Capacitor 封装为原生 Android 安装包，支持单词级评分和本地离线音频缓存。
+> *（不得不说，感觉大晚上我还在写这么好看的 README 简直是在感动自己，明早导师催的 NLP 任务快来不及写了呜呜呜 😭）*
 
-GitHub 仓库：[https://github.com/connectedGraph/AIED-DuoGrow-SaaS](https://github.com/connectedGraph/AIED-DuoGrow-SaaS)
+GitHub 仓库：[https://github.com/connectedGraph/DuoGrow-SPA](https://github.com/connectedGraph/DuoGrow-SPA)
 
 ---
 
@@ -26,9 +41,6 @@ GitHub 仓库：[https://github.com/connectedGraph/AIED-DuoGrow-SaaS](https://gi
 * **随身听仓库**：保存整组内容到仓库，支持单句播放、整组播放、全仓库循环听和后台听。
 * **轻量复习**：复习页会从保存过的表达里抽题，记录答对、答错和熟练度。
 * **每日一记卡片**：随机抽取内容生成适合手机保存的图片，支持长按存入相册。
-* **豆包一对一训练**：复制魔法指令，引导豆包按仓库句子做中译英小任务。
-> ⚠️ *原本想做豆包 URL Scheme 自动发送和跳转的，但目前网上能检索到的相关接口均已失效；在网页里内嵌一个套壳 LLM 对话框又显得很鸡肋，故最终保留了"一键复制提示词"的形式。*
-
 
 * **智能缓存**：音频会缓存到本地，重复播放时优先读取缓存，减少重复请求。
 
