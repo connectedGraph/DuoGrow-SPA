@@ -1,4 +1,4 @@
-package com.duogrow.quest;
+package com.duogrow;
 
 import com.getcapacitor.BridgeActivity;
 

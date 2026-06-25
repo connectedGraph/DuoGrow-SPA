@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Duogrow</string>
     <string name="title_activity_main">Duogrow</string>
-    <string name="package_name">com.duogrow.quest</string>
-    <string name="custom_url_scheme">com.duogrow.quest</string>
+    <string name="package_name">com.duogrow</string>
+    <string name="custom_url_scheme">com.duogrow</string>
 </resources>

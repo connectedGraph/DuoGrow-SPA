@@ -1444,12 +1444,15 @@ function init() {
     updateGamifyUI();
     updateStreak();
 
-    // Background auto-generate daily push on startup
-    var dailyCache = loadDailyPushCache();
-    var todayKey = getDailyPushKey();
-    if (!dailyCache || dailyCache.key !== todayKey || !dailyCache.lesson) {
-        var dailyTopic = getDailyTopicNoun();
-        generateDailyPush(dailyTopic, todayKey);
+    // Background auto-generate daily push on startup (only if apiKey/password is configured)
+    var config = loadConfig();
+    if (config && config.apiKey) {
+        var dailyCache = loadDailyPushCache();
+        var todayKey = getDailyPushKey();
+        if (!dailyCache || dailyCache.key !== todayKey || !dailyCache.lesson) {
+            var dailyTopic = getDailyTopicNoun();
+            generateDailyPush(dailyTopic, todayKey);
+        }
     }
 
     if (appState.activeTab !== "learn") {
