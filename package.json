@@ -4,7 +4,7 @@
   "description": "一个面向中年人、老年人和带娃家长的英语学习小工具。它把日常场景转成可以直接开口的短句，适合亲子英语、手机端复听、轻量复习和每天留一张记忆卡片。",
   "main": "app.js",
   "scripts": {
-    "sync": "cp index.html style.css app.js config.js topic.js storage-adapter.js www/ && node node_modules/@capacitor/cli/bin/capacitor sync",
+    "sync": "node sync-assets.js && node node_modules/@capacitor/cli/bin/capacitor sync",
     "open": "node node_modules/@capacitor/cli/bin/capacitor open android",
     "build": "npm run sync && cd android && gradlew assembleDebug"
   },
