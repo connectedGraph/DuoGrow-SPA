@@ -1,6 +1,6 @@
 {
   "appId": "com.duogrow.quest",
-  "appName": "DuoGrow Quest",
+  "appName": "Duogrow",
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
