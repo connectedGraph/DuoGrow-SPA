@@ -2,7 +2,7 @@
 // 常数定义表。往这里加通知、公告、推送模板等静态配置。
 // 部署时由 build.js 内联到 dist.html。
 
-const APP_CONFIG = {
+export const APP_CONFIG = {
 
     // 消息推送列表（JSON 驱动）
     // type: "daily" | "notice" | "update" | "tip"

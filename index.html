@@ -161,6 +161,7 @@
     <div id="doubaoOverlay" class="sheet-overlay" data-action="close-doubao"></div>
     <div id="githubOverlay" class="sheet-overlay" data-action="close-github"></div>
     <div id="sentenceOverlay" class="sheet-overlay" data-action="close-sentence-detail"></div>
+    <div id="advancedSettingsOverlay" class="sheet-overlay" data-action="close-advanced-settings"></div>
 
     <!-- Sentence Detail Sheet -->
     <section id="sentenceSheet" class="sheet" aria-label="句子详情" role="dialog" aria-modal="true">
@@ -192,6 +193,34 @@
       <div class="sheet-actions">
         <button class="btn btn-ghost" type="button" data-action="close-settings">稍后</button>
         <button id="saveConfigBtn" class="btn btn-primary" type="button" data-action="save-config">保存</button>
+      </div>
+    </section>
+
+    <!-- Advanced Settings Sheet -->
+    <section id="advancedSettingsSheet" class="sheet" aria-label="高级配置" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <strong class="sheet-title">⚙️ API 高级配置</strong>
+        <button class="icon-btn" type="button" aria-label="关闭" data-action="close-advanced-settings">✕</button>
+      </div>
+      <p class="sheet-copy">在此自定义您的大模型 API 配置。保存后将覆盖默认配置并在本地生效。</p>
+      <div class="sheet-grid" style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="sheet-field">
+          <label for="cfg-key">API Key</label>
+          <input id="cfg-key" type="password" placeholder="输入 API Key" autocomplete="off" autocapitalize="off" spellcheck="false" />
+        </div>
+        <div class="sheet-field">
+          <label for="cfg-base">API Base URL</label>
+          <input id="cfg-base" type="text" placeholder="例如 https://api.deepseek.com/v1" autocomplete="off" autocapitalize="off" spellcheck="false" />
+        </div>
+        <div class="sheet-field">
+          <label for="cfg-model">模型名称 (Model)</label>
+          <input id="cfg-model" type="text" placeholder="例如 deepseek-chat" autocomplete="off" autocapitalize="off" spellcheck="false" />
+        </div>
+      </div>
+      <div class="sheet-actions" style="margin-top: 20px;">
+        <button class="btn btn-ghost" type="button" data-action="close-advanced-settings">取消</button>
+        <button id="saveAdvancedConfigBtn" class="btn btn-primary" type="button" data-action="save-advanced-config">保存</button>
       </div>
     </section>
 
@@ -273,8 +302,9 @@
     </section>
   </div>
 
-  <script src="config.js"></script>
-  <script src="topic.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="storage-adapter.js"></script>
+  <script type="module" src="config.js"></script>
+  <script type="module" src="topic.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -3680,6 +3680,9 @@ button:disabled {
     font-size: 14px;
     color: var(--text-muted);
 }
+.sr-playback-btn {
+    margin: 4px 0;
+}
 .sr-sentence {
     font-size: 13px;
     color: var(--text-muted);
@@ -3728,6 +3731,70 @@ button:disabled {
     font-size: 12px;
     font-weight: 700;
     text-align: right;
+}
+
+/* Word-level score highlighting */
+.sr-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    padding: 12px 0;
+    justify-content: center;
+}
+.sr-word {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.sr-word:active { transform: scale(0.93); }
+.sr-word.ws-good { background: rgba(76, 175, 80, 0.18); color: #4CAF50; border: 1px solid rgba(76, 175, 80, 0.4); }
+.sr-word.ws-ok { background: rgba(255, 152, 0, 0.18); color: #FF9800; border: 1px solid rgba(255, 152, 0, 0.4); }
+.sr-word.ws-bad { background: rgba(244, 67, 54, 0.18); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.4); }
+
+/* Word card overlay */
+.word-card-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+.word-card-overlay.visible { opacity: 1; pointer-events: auto; }
+.word-card {
+    background: var(--surface-strong, #252347);
+    border-radius: 16px;
+    padding: 28px 24px;
+    min-width: 240px;
+    max-width: 320px;
+    text-align: center;
+    box-shadow: var(--shadow-lg, 0 25px 60px rgba(0,0,0,0.5));
+}
+.wc-word { font-size: 28px; font-weight: 800; color: var(--text, #fff); margin-bottom: 4px; }
+.wc-ipa { font-size: 16px; color: var(--text-muted, rgba(255,255,255,0.6)); margin-bottom: 8px; }
+.wc-score { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+.wc-score.ws-good { color: #4CAF50; }
+.wc-score.ws-ok { color: #FF9800; }
+.wc-score.ws-bad { color: #f44336; }
+.wc-translations { margin-bottom: 16px; }
+.wc-tr { font-size: 14px; color: var(--text-muted, rgba(255,255,255,0.6)); line-height: 1.6; }
+.wc-play-btn {
+    background: var(--accent, #7c3aed);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
 /* Hidden utility */

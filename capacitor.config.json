@@ -1,0 +1,9 @@
+{
+  "appId": "com.duogrow.quest",
+  "appName": "DuoGrow Quest",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

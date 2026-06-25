@@ -1,4 +1,4 @@
-const topicNouns = {
+export const topicNouns = {
   metadata: {
     totalCategories: 20,
     wordsPerCategory: 300,

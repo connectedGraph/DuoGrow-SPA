@@ -1,3 +1,12 @@
+import { StorageAdapter } from './storage-adapter.js';
+import { APP_CONFIG } from './config.js';
+import { topicNouns } from './topic.js';
+
+// Capacitor Storage 适配器导入
+
+
+
+
 // 本地持久化键名集中管理。
 const STORAGE_KEYS={config:"mom_english_config",expressions:"mom_english_expressions",currentLesson:"mom_english_current_lesson",savedLessons:"mom_english_saved_lessons",lessonCache:"mom_english_lesson_cache",audioCache:"mom_english_audio_cache",dailyMemoryCard:"mom_english_daily_memory_card",gamify:"mom_english_gamify"};
 
@@ -42,7 +51,8 @@ const SavedLessonRepo = {
 // 从本地存储读取 JSON 值并在失败时返回兜底值。
 function storageGet(key, fallback) {
     try {
-        return JSON.parse(localStorage.getItem(key) ?? "null") ?? fallback;
+        const value = localStorage.getItem(key);
+        return JSON.parse(value ?? "null") ?? fallback;
     } catch {
         return fallback;
     }
@@ -55,124 +65,70 @@ function storageSet(key, value) {
 
 // 默认接口和模型配置。
 const DEFAULT_CONFIG = {
-    apiBase: "your_api_base_url",
+    apiBase: "https://api.deepseek.com",
     apiKey: "",
     ttsSecret: "",
     password: "",
-    model: "gpt-5.4",
-    fallbackModel: "gpt-5.4-mini",
+    model: "deepseek-v4-flash",
+    fallbackModel: "claude-sonnet-4-6",
 };
 
-const SPEECH_SCORE_URL = "";
+const SPEECH_ASSESS_URL = "https://6767.chat/api/speech-assess";
+const DICTVOICE_URL = "https://dict.youdao.com/dictvoice";
+const DICT_API_URL = "https://dict.youdao.com/jsonapi_s?doctype=json&jsonversion=4";
 
-// 生成内容要求的统一 JSON 结构。
-const GENERATION_JSON_SCHEMA = `JSON 结构：
-{
-  "topic": "string",
-  "target_count": 5,
-  "input_type": "noun | scene | sentence | question | review",
-  "level": "beginner",
-  "core_word": {
-    "english": "string",
-    "chinese": "string",
-    "phonics_hint": "string"
-  },
-  "expressions": [
-    {
-      "english": "string",
-      "chinese": "string",
-      "scene": "string",
-      "note": "string"
-    }
-  ],
-  "kid_activity": {
-    "title": "string",
-    "steps": ["string", "string", "string"]
-  },
-  "review_questions": [
-    {
-      "type": "zh_to_en | en_to_zh",
-      "question": "string",
-      "answer": "string"
-    }
-  ],
-  "encouragement": "string"
-}`;
+const GENERATION_SCHEMA = {
+  topic: "string",
+  target_count: "number",
+  input_type: "noun | scene | sentence | question | review",
+  level: "beginner",
+  core_word: { english: "string", chinese: "string", phonics_hint: "string" },
+  expressions: [{ english: "string", chinese: "string", scene: "string", note: "string" }],
+  kid_activity: { title: "string", steps: ["string"] },
+  review_questions: [{ type: "zh_to_en | en_to_zh", question: "string", answer: "string" }],
+  encouragement: "string"
+};
 
-// 生成模式配置集中承载提示词和数量。
+const GENERATION_SYSTEM_BASE = `You are a parent-child English expression designer for a 50-year-old Chinese mother learning to speak simple English with her toddler.
+
+Rules:
+- Every sentence must be short, natural, spoken-style, toddler-appropriate.
+- No textbook grammar, no adult phrasing, no synonymous repetition.
+- Each sentence serves a distinct function in a mini interaction flow.
+- Output valid JSON only. No markdown, no explanation outside JSON.
+- Include chinese meaning and usage scene for each expression.
+- Generate a 1-2 minute kid activity game related to the topic.
+- Generate review questions (zh_to_en and en_to_zh).
+
+JSON schema:
+${JSON.stringify(GENERATION_SCHEMA, null, 2)}`;
+
 const GENERATION_PROFILES = {
     compact: {
         mode: "compact",
         count: 5,
         shortName: "精简版亲子英语表达包",
-        systemPrompt: `你是一个"妈妈亲子英语优先级筛选助手"，专门帮50多岁的中文妈妈从一个家庭场景里挑出最值得先学、最容易马上说出口的英语短句。
+        systemPrompt: GENERATION_SYSTEM_BASE + `
 
-你的目标是少而准。不要铺开太多表达，不要同义重复，不要为了覆盖面牺牲顺口度。每一句都要像妈妈今天就能对孩子说出来的话，短、自然、生活化，适合幼儿场景。
+Mode: compact (5 expressions).
+target_count: 5, review_questions: 3.
+The 5 sentences must form a minimal usable set: introduce topic, describe, ask, interact, praise/close.`,
+        buildUserPrompt: userInput => `Topic: ${userInput}
 
-你必须严格生成5个英文表达。5句之间要功能不同，形成最小可用组合：引入主题、简单描述、常用问句、互动动作、表扬或收束。
-
-输出必须温暖、具体、可直接开口。严格输出 JSON，不要 Markdown，不要额外解释。For API compatibility, the final answer must be a valid json object.
-
-${GENERATION_JSON_SCHEMA}`,
-        buildUserPrompt: userInput => `用户今天想学：${userInput}
-
-请为她生成一组"精简版亲子英语表达包"。
-
-要求：
-- 严格生成5个英文表达
-- 这5句必须是这个主题下最值得优先学、最常用、最容易马上对小孩说出口的句子
-- 适合50多岁中文妈妈学习
-- 适合对小孩说
-- 短句、自然、生活化
-- 每句都要有中文意思和使用场景
-- 5句之间尽量功能不同，不要高度重复
-- 优先覆盖：
-  1. 认物或引入主题
-  2. 一个简单描述
-  3. 一个常用问句
-  4. 一个互动或动作句
-  5. 一个表扬、回应或收束句
-- 生成一个1分钟小游戏
-- 生成3道简单复习题
-- 严格输出JSON`
+Generate a compact pack (5 expressions). Prioritize the most useful, easiest-to-say sentences for this scenario. Sentences must differ in function — no repetition.`
     },
     rich: {
         mode: "rich",
         count: 10,
         shortName: "丰富版亲子英语表达包",
-        systemPrompt: `你是一个"亲子英语互动流程设计师"，专门帮50多岁的中文妈妈把一个家庭场景整理成一套可以连续使用的英语小脚本。
+        systemPrompt: GENERATION_SYSTEM_BASE + `
 
-你的目标不是翻译词语，而是设计一组自然、不重复、能从开场用到收尾的亲子英语表达。每句都必须短、口语化、适合对幼儿说，不能出现考试式解释、复杂语法或成人化表达。
+Mode: rich (10 expressions).
+target_count: 10, review_questions: 5.
+The 10 sentences must form a complete mini interaction script: introduce, observe, ask, act, encourage, respond, close. Cover different functions — no padding with synonyms.`,
+        buildUserPrompt: userInput => `Topic: ${userInput}
 
-你必须严格生成10个英文表达。10句之间要承担不同功能，避免同义换皮、句式重复和场景重复。优先让句子组成一个小型互动流程：引入主题、观察描述、提问、动作互动、鼓励、回应、自然结束。
-
-输出必须温暖、具体、可直接开口。严格输出 JSON，不要 Markdown，不要额外解释。For API compatibility, the final answer must be a valid json object.
-
-${GENERATION_JSON_SCHEMA.replace('"target_count": 5', '"target_count": 10')}`,
-        buildUserPrompt: userInput => `用户今天想学：${userInput}
-
-请为她生成一组"丰富版亲子英语表达包"。
-
-要求：
-- 严格生成10个英文表达
-- 这10句要围绕同一个主题，组成一套更完整的亲子互动语言库
-- 适合50多岁中文妈妈学习
-- 适合对小孩说
-- 短句、自然、生活化
-- 每句都要有中文意思和使用场景
-- 不要为了凑数量而生成高度重复的句子
-- 10句要尽量覆盖不同用途：
-  1. 认物或引入主题
-  2. 两个简单描述句
-  3. 两个常用问句
-  4. 两个动作或互动指令
-  5. 一个鼓励句
-  6. 一个简单回应句
-  7. 一个自然收束句
-- 如果主题很适合，可以让10句形成一个小型互动流程，从开始到结束都能用
-- 生成一个1到2分钟亲子小游戏
-- 生成5道简单复习题
-- 严格输出JSON`
+Generate a rich pack (10 expressions). Build a coherent interaction flow from start to finish. Each sentence must serve a unique purpose — no filler, no repetition.`
     }
 };
 
@@ -187,6 +143,10 @@ const SHEETS = {
     settings: {
         overlay: "sheetOverlay",
         sheet: "settingsSheet"
+    },
+    advancedSettings: {
+        overlay: "advancedSettingsOverlay",
+        sheet: "advancedSettingsSheet"
     },
     guide: {
         overlay: "guideOverlay",
@@ -361,7 +321,16 @@ const NORMALIZE_BASE = value =>
         .replace(/[\s\u00A0\u3000]+/g, "")
         .trim();
 
-// 有道读音服务配置。
+// Kokoro TTS 主服务配置。
+const KOKORO_TTS_CONFIG = {
+    endpoint: "https://6767.chat/api/tts",
+    timeout: 10000,
+    voice: "af_heart",
+    format: "mp3",
+    speed: 1.0
+};
+
+// 有道读音服务配置（备用）。
 const YOUDAO_TTS_CONFIG = {
     endpoint: "https://openapi.youdao.com/ttsapi",
     appKey: "299f0ae312ba957c",
@@ -576,6 +545,7 @@ const appState = {
     audioUnlocked: false,
     audioPlayToken: "",
     audioStopResolver: null,
+    audioSkipRevoke: false,
     warehouseIndex: 0,
     warehouseLoopPlaying: false,
     warehouseLessonLoopId: "",
@@ -691,32 +661,37 @@ function fireConfetti() {
         requestAnimationFrame(animate);
     })();
 }
-function toggleTheme() {
+async function toggleTheme() {
     const isLight = document.documentElement.classList.toggle("theme-light");
-    localStorage.setItem("mom_english_theme", isLight ? "light" : "dark");
+    await StorageAdapter.setItem("mom_english_theme", isLight ? "light" : "dark");
     const icon = document.getElementById("themeIcon");
     if (icon) icon.textContent = isLight ? "☀️" : "🌙";
 }
-(function initTheme() {
-    if (localStorage.getItem("mom_english_theme") === "light") {
+(async function initTheme() {
+    const theme = await StorageAdapter.getItem("mom_english_theme");
+    if (theme === "light") {
         document.documentElement.classList.add("theme-light");
         var icon = document.getElementById("themeIcon");
         if (icon) icon.textContent = "☀️";
     }
 })();
 
-function getFontScale() {
-    var v = parseFloat(localStorage.getItem("mom_english_font_scale"));
+var currentFontScale = 1.0;
+
+async function getFontScale() {
+    const value = await StorageAdapter.getItem("mom_english_font_scale");
+    var v = parseFloat(value);
     return (v >= 1 && v <= 1.3) ? v : 1;
 }
 function applyFontScale(scale) {
+    currentFontScale = scale;
     document.documentElement.style.setProperty("--font-scale", scale);
 }
-function setFontScale(scale) {
-    localStorage.setItem("mom_english_font_scale", scale);
+async function setFontScale(scale) {
+    await StorageAdapter.setItem("mom_english_font_scale", String(scale));
     applyFontScale(scale);
 }
-applyFontScale(getFontScale());
+getFontScale().then(applyFontScale);
 
 // ===== Badge / Achievement System (Tiered) =====
 const BADGE_CATEGORIES = [
@@ -1044,7 +1019,7 @@ async function handleNewPush(button) {
             '<div class="push-card"><div class="push-card-head">' +
             '<span class="push-card-badge">NEW</span><span class="push-card-topic">' + escapeHtml(cardData.topic) + '</span><span class="push-card-word">' + escapeHtml(cardData.coreWord) + '</span></div>' +
             '<div class="push-card-body">' + exprsHtml + '</div>' +
-            '<div class="push-card-actions"><button class="btn btn-primary btn-sm" type="button" data-action="speak-memory-card">🔊 听</button><button class="btn btn-ghost btn-sm" type="button" data-action="save-push-lesson">📦 存仓库</button></div>' +
+            '<div class="push-card-actions"><button class="btn btn-primary btn-sm" type="button" data-action="speak-memory-card">🔊 听</button><button class="btn btn-ghost btn-sm" type="button" data-action="open-memory-card-image">📷 存图</button><button class="btn btn-ghost btn-sm" type="button" data-action="save-push-lesson">📦 存仓库</button><button class="btn btn-primary btn-sm push-new-btn" type="button" data-action="new-push">✨ 新推送</button></div>' +
             '</div></div>';
 
         if (flow) flow.appendChild(resultMsg);
@@ -1538,7 +1513,7 @@ function handleVisibilityChange() {
 }
 
 // 点击事件代理根据 data-action 分发到具体处理函数。
-const actionHandlers = {
+var actionHandlers = {
     "generate": (trigger) => handleGenerate(trigger.dataset.mode || "compact"),
     "switch-tab": (trigger) => trigger.dataset.tab && switchTab(trigger.dataset.tab),
     "open-github": () => openGithubSheet(),
@@ -1549,6 +1524,8 @@ const actionHandlers = {
     "close-image-preview": () => closeSheet("image"),
     "open-settings": () => openSheet("settings", hydrateConfigInputs),
     "close-settings": () => closeSheet("settings"),
+    "open-advanced-settings": () => openSheet("advancedSettings", hydrateAdvancedConfigInputs),
+    "close-advanced-settings": () => closeSheet("advancedSettings"),
     "save-config": () => unlockConfigFromInputs(),
     "toggle-theme": () => toggleTheme(),
     "toggle-learn-input": () => toggleLearnInput(),
@@ -1602,6 +1579,8 @@ const actionHandlers = {
     "exit-lesson-recorder": () => closeLessonRecorder(),
     "lesson-record-toggle": (trigger) => toggleLessonRecording(decodeData(trigger.dataset.text), trigger),
     "fav-remove-confirm": (trigger) => handleFavRemoveConfirm(trigger),
+    "export-json": () => exportAllDataAsJson(),
+    "save-advanced-config": () => saveAdvancedConfig(),
 };
 // 处理 handleActionClick 函数。
 function handleActionClick(event) {
@@ -1872,7 +1851,7 @@ async function generateLessonWithResponses(messages) {
     return requestStructuredJson({
         url: `${normalizeBaseUrl(appState.config.apiBase)}/responses`,
         body: {
-            model: DEFAULT_CONFIG.model,
+            model: appState.config.model || DEFAULT_CONFIG.model,
             input: messages.map(message => ({
                 role: message.role,
                 content: message.content
@@ -1889,7 +1868,7 @@ async function generateLessonWithResponses(messages) {
 
 // 处理 generateLessonWithChatCompletions 函数。
 async function generateLessonWithChatCompletions(messages, previousError = null) {
-    const models = [DEFAULT_CONFIG.model];
+    const models = [appState.config.model || DEFAULT_CONFIG.model];
 
     let lastError = previousError;
     for (const model of models) {
@@ -2852,7 +2831,7 @@ async function playLoopAudioTexts({
                 const audioUrl = await getOrFetchAudio(text, rate);
                 if (!isActive()) return;
                 stopCurrentAudio();
-                await playAudioUrl(audioUrl);
+                await playAudioUrl(audioUrl, false, rate);
             }
         }
     }
@@ -2977,7 +2956,7 @@ async function playLessonLoop(lessonId, texts, rate = 0.72, token = "") {
 
 // 处理 speakCurrentMemoryCard 函数。
 async function speakCurrentMemoryCard(button) {
-    const lesson = getDailyMemoryLesson(loadSavedLessons());
+    const lesson = appState._pushLesson || getDailyMemoryLesson(loadSavedLessons());
     const texts = getPosterExpressions(lesson, lesson?.expressions || []).map(item => item.english).filter(Boolean);
     return playTextBatchOnce({
         texts,
@@ -3447,14 +3426,16 @@ function renderProfile() {
             '</div>' +
             '<div class="profile-setting">' +
                 '<span class="profile-setting-label">字号大小</span>' +
-                '<input class="profile-setting-slider" type="range" min="100" max="130" step="5" value="' + (getFontScale() * 100) + '" data-action="font-scale-change" id="fontScaleSlider" />' +
-                '<span class="profile-setting-value" id="fontScaleValue">' + Math.round(getFontScale() * 100) + '%</span>' +
+                '<input class="profile-setting-slider" type="range" min="100" max="130" step="5" value="' + (currentFontScale * 100) + '" data-action="font-scale-change" id="fontScaleSlider" />' +
+                '<span class="profile-setting-value" id="fontScaleValue">' + Math.round(currentFontScale * 100) + '%</span>' +
             '</div>' +
             renderBadgeWall() +
             '<div class="profile-actions">' +
                 '<button class="btn btn-ghost" type="button" data-action="open-settings">🔑 密码设置</button>' +
+                '<button class="btn btn-ghost" type="button" data-action="export-json">📥 导出 JSON</button>' +
                 '<button class="btn btn-ghost" type="button" data-action="open-github">GitHub</button>' +
                 '<button class="btn btn-ghost" type="button" data-action="open-guide">使用帮助</button>' +
+                '<button class="btn btn-ghost" type="button" data-action="open-advanced-settings">⚙️ API高级设置</button>' +
             '</div>' +
         '</div>';
 }
@@ -3533,6 +3514,25 @@ function renderFavoritesPage() {
             linesHtml +
             navHtml +
         '</div>';
+}
+
+function exportAllDataAsJson() {
+    const data = {
+        exportedAt: new Date().toISOString(),
+        lessons: loadSavedLessons(),
+        expressions: loadExpressions(),
+        gamify: storageGet(STORAGE_KEYS.gamify, {})
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "duogrow-export-" + buildDateKey(new Date()) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("已导出 JSON 文件", "success");
 }
 
 // 处理 getDailyMemoryLesson 函数。
@@ -4045,6 +4045,9 @@ function encodeWav(samples, sampleRate) {
 
 async function recordAudioBlob(maxSeconds) {
     maxSeconds = maxSeconds || 15;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("当前环境不支持录音，请用 HTTPS 页面打开。");
+    }
     var stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
     var audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
     var source = audioCtx.createMediaStreamSource(stream);
@@ -4075,12 +4078,16 @@ async function submitSpeechScore(wavBlob, text) {
     var fd = new FormData();
     fd.append('audio', wavBlob, 'recording.wav');
     fd.append('text', text);
-    fd.append('lang', 'en');
-    var resp = await fetch(SPEECH_SCORE_URL, { method: 'POST', body: fd });
+    fd.append('langType', 'en');
+    fd.append('format', 'wav');
+    fd.append('rate', '16000');
+    fd.append('channel', '1');
+    fd.append('type', '1');
+    var resp = await fetch(SPEECH_ASSESS_URL, { method: 'POST', body: fd });
     if (!resp.ok) throw new Error('评分服务响应异常: ' + resp.status);
     var json = await resp.json();
-    if (!json.success) throw new Error(json.message || '评分失败');
-    return json.data;
+    if (!json.success || json.youdaoErrorCode !== '0') throw new Error(json.errorMessageZh || '评分失败');
+    return json.raw;
 }
 
 function scoreGrade(score) {
@@ -4110,17 +4117,111 @@ function buildScoreBar(label, value, isSpeed) {
     '</div>';
 }
 
-function showScoreReport(data, text) {
+function wordScoreColor(score) {
+    if (score >= 80) return '#4CAF50';
+    if (score >= 60) return '#FF9800';
+    return '#f44336';
+}
+
+function wordScoreClass(score) {
+    if (score >= 80) return 'ws-good';
+    if (score >= 60) return 'ws-ok';
+    return 'ws-bad';
+}
+
+function buildWordsHighlight(words, fallbackText) {
+    if (!words || !words.length) {
+        return fallbackText ? '<div class="sr-sentence">' + escapeHtml(fallbackText) + '</div>' : '';
+    }
+    return '<div class="sr-words">' +
+        words.map(function(w) {
+            var cls = wordScoreClass(w.pronunciation);
+            return '<span class="sr-word ' + cls + '" data-word="' + escapeHtml(w.word) + '" data-score="' + Math.round(w.pronunciation) + '" data-ipa="' + escapeHtml(w.IPA || '') + '">' + escapeHtml(w.word) + '</span>';
+        }).join(' ') +
+    '</div>';
+}
+
+function getDictVoiceUrl(word) {
+    return DICTVOICE_URL + '?audio=' + encodeURIComponent(word) + '&type=2';
+}
+
+function playDictVoice(word) {
+    if (!playDictVoice._audio) playDictVoice._audio = new Audio();
+    playDictVoice._audio.src = getDictVoiceUrl(word);
+    playDictVoice._audio.play().catch(function() {});
+}
+
+async function fetchWordCard(word) {
+    try {
+        var resp = await fetch(DICT_API_URL + '&q=' + encodeURIComponent(word));
+        if (!resp.ok) return null;
+        var json = await resp.json();
+        var ec = json.ec;
+        if (!ec || !ec.word || !ec.word.length) return null;
+        var entry = ec.word[0];
+        var phonetic = entry.usphone || entry.ukphone || entry.phonetic || '';
+        var trs = (entry.trs || []).map(function(t) {
+            var pos = t.pos || '';
+            var tran = t.tran || '';
+            return pos ? pos + ' ' + tran : tran;
+        }).filter(Boolean);
+        return { word: word, phonetic: phonetic, translations: trs };
+    } catch(e) {
+        return null;
+    }
+}
+
+function showWordCard(word, ipa, score) {
+    playDictVoice(word);
+    var cardEl = document.getElementById('wordCardOverlay');
+    if (!cardEl) {
+        cardEl = document.createElement('div');
+        cardEl.id = 'wordCardOverlay';
+        cardEl.className = 'word-card-overlay';
+        cardEl.addEventListener('click', function(e) {
+            if (e.target === cardEl) cardEl.classList.remove('visible');
+        });
+        document.body.appendChild(cardEl);
+    }
+    var colorCls = wordScoreClass(score);
+    cardEl.innerHTML =
+        '<div class="word-card">' +
+            '<div class="wc-word">' + escapeHtml(word) + '</div>' +
+            '<div class="wc-ipa">/' + escapeHtml(ipa) + '/</div>' +
+            '<div class="wc-score ' + colorCls + '">' + score + ' 分</div>' +
+            '<div class="wc-translations"></div>' +
+            '<button class="wc-play-btn" type="button">🔊 美音</button>' +
+        '</div>';
+    cardEl.classList.add('visible');
+    cardEl.querySelector('.wc-play-btn').addEventListener('click', function() { playDictVoice(word); });
+    fetchWordCard(word).then(function(data) {
+        var trEl = cardEl.querySelector('.wc-translations');
+        if (!trEl) return;
+        if (data && data.translations.length) {
+            trEl.innerHTML = data.translations.map(function(t) { return '<div class="wc-tr">' + escapeHtml(t) + '</div>'; }).join('');
+            if (data.phonetic) {
+                var ipaEl = cardEl.querySelector('.wc-ipa');
+                if (ipaEl) ipaEl.textContent = '/' + data.phonetic + '/';
+            }
+        }
+    });
+}
+
+function showScoreReport(data, text, recordingBlobUrl) {
     var total = calcSingleScore(data);
     var grade = scoreGrade(total);
     openSheet("sentence", function() {
         elements.sentenceSheetTitle.textContent = "口语评分报告";
+        var playbackBtn = recordingBlobUrl
+            ? '<button class="btn btn-secondary sr-playback-btn" type="button" data-action="play-recording">🔊 听原声</button>'
+            : '';
         elements.sentenceDetailContent.innerHTML =
             '<div class="score-report">' +
                 '<div class="sr-grade" style="color:' + grade.color + '">' + grade.label + '</div>' +
                 '<div class="sr-total">' + total + '<span class="sr-total-unit">分</span></div>' +
                 '<div class="sr-comment">' + escapeHtml(grade.comment) + '</div>' +
-                '<div class="sr-sentence">' + escapeHtml(text) + '</div>' +
+                playbackBtn +
+                buildWordsHighlight(data.words, text) +
                 '<div class="sr-bars">' +
                     buildScoreBar('综合', data.overall) +
                     buildScoreBar('发音', data.pronunciation) +
@@ -4129,6 +4230,21 @@ function showScoreReport(data, text) {
                     buildScoreBar('语速', data.speed, true) +
                 '</div>' +
             '</div>';
+        var playBtn = elements.sentenceDetailContent.querySelector('[data-action="play-recording"]');
+        if (playBtn && recordingBlobUrl) {
+            playBtn.addEventListener('click', function() {
+                stopCurrentAudio();
+                playAudioUrl(recordingBlobUrl, true);
+            });
+        }
+        var wordsEl = elements.sentenceDetailContent.querySelector('.sr-words');
+        if (wordsEl) {
+            wordsEl.addEventListener('click', function(e) {
+                var span = e.target.closest('.sr-word');
+                if (!span) return;
+                showWordCard(span.dataset.word, span.dataset.ipa, Number(span.dataset.score));
+            });
+        }
     });
 }
 
@@ -4184,10 +4300,12 @@ async function finishRecording(text, button) {
     }
     _activeRecording = null;
     if (button) { button.classList.remove("recording"); button.textContent = "⏳"; button.disabled = true; }
+    var recordingBlobUrl = URL.createObjectURL(wavBlob);
     try {
         var data = await submitSpeechScore(wavBlob, text);
-        showScoreReport(data, text);
+        showScoreReport(data, text, recordingBlobUrl);
     } catch(e) {
+        URL.revokeObjectURL(recordingBlobUrl);
         showToast("评分失败: " + e.message, "error");
     } finally {
         if (button) { button.disabled = false; button.textContent = "🎤"; }
@@ -4325,6 +4443,7 @@ async function finishLessonRecording(text, button) {
     if (button) { button.classList.remove("recording"); button.textContent = "⏳"; button.disabled = true; }
     var statusEl = document.getElementById('irStatus');
     if (statusEl) statusEl.textContent = "评分中，请稍候…";
+    var recordingBlobUrl = URL.createObjectURL(wavBlob);
     try {
         var data = await submitSpeechScore(wavBlob, text);
         var total = calcLessonScore(data);
@@ -4336,16 +4455,36 @@ async function finishLessonRecording(text, button) {
                 '<div class="sr-grade" style="color:' + grade.color + '">' + grade.label + '</div>' +
                 '<div class="sr-total">' + total + '<span class="sr-total-unit">分</span></div>' +
                 '<div class="sr-comment">' + escapeHtml(grade.comment) + '</div>' +
+                '<button class="btn btn-secondary sr-playback-btn" type="button" data-action="play-recording">🔊 听原声</button>' +
+                buildWordsHighlight(data.words, text) +
                 '<div class="sr-bars">' +
                     buildScoreBar('发音', data.pronunciation) +
                     buildScoreBar('完整', data.integrity) +
                 '</div>' +
             '</div>';
 
-        if (statusEl) statusEl.innerHTML = reportHtml;
+        if (statusEl) {
+            statusEl.innerHTML = reportHtml;
+            var playBtn = statusEl.querySelector('[data-action="play-recording"]');
+            if (playBtn) {
+                playBtn.addEventListener('click', function() {
+                    stopCurrentAudio();
+                    playAudioUrl(recordingBlobUrl, true);
+                });
+            }
+            var wordsEl = statusEl.querySelector('.sr-words');
+            if (wordsEl) {
+                wordsEl.addEventListener('click', function(e) {
+                    var span = e.target.closest('.sr-word');
+                    if (!span) return;
+                    showWordCard(span.dataset.word, span.dataset.ipa, Number(span.dataset.score));
+                });
+            }
+        }
         var lastEl = document.querySelector('.ir-last-score');
         if (lastEl) lastEl.textContent = grade.label + ' · ' + total + '分';
     } catch(e) {
+        URL.revokeObjectURL(recordingBlobUrl);
         if (statusEl) statusEl.textContent = "评分失败: " + e.message;
         showToast("评分失败: " + e.message, "error");
     } finally {
@@ -4367,7 +4506,7 @@ async function speak(text, rate = 1, button = null) {
     if (!text) return;
 
     const originalLabel = button?.textContent || "播放读音";
-    const cachedAudio = getCachedAudio(buildAudioCacheKey(text, rate));
+    const cachedAudio = getCachedAudio(buildAudioCacheKey(text, 1));
     const compactButton = isCompactAudioButton(button);
     setButtonBusy(button, true, compactButton ? "…" : (cachedAudio ? "播放中..." : "准备读音..."));
 
@@ -4375,7 +4514,7 @@ async function speak(text, rate = 1, button = null) {
         await unlockAudioPlayback();
         const audioUrl = await getOrFetchAudio(text, rate);
         stopCurrentAudio();
-        await playAudioUrl(audioUrl);
+        await playAudioUrl(audioUrl, false, rate);
     } catch (error) {
         console.error(error);
         showToast("读音播放失败了，可以稍后再试。错误：" + friendlyError(error), "error");
@@ -4389,7 +4528,7 @@ async function playAudioTexts(texts, rate = 0.72) {
     for (const text of texts) {
         const audioUrl = await getOrFetchAudio(text, rate);
         stopCurrentAudio();
-        await playAudioUrl(audioUrl);
+        await playAudioUrl(audioUrl, false, rate);
     }
 }
 
@@ -4428,13 +4567,14 @@ async function unlockAudioPlayback() {
 }
 
 // 处理 playAudioUrl 函数。
-function playAudioUrl(audioUrl) {
+function playAudioUrl(audioUrl, skipRevoke = false, rate = 1) {
     return new Promise((resolve, reject) => {
         const audio = getAudioPlayer();
         const token = createId();
         let settled = false;
         appState.audioPlayToken = token;
         appState.audioUrl = audioUrl;
+        appState.audioSkipRevoke = skipRevoke;
 
         const finish = () => {
             if (settled) return;
@@ -4455,11 +4595,22 @@ function playAudioUrl(audioUrl) {
             fail(new Error("音频播放失败。"));
         };
 
+        audio.pause();
         audio.volume = 1;
-        audio.src = audioUrl;
         try {
             audio.currentTime = 0;
         } catch {}
+        audio.src = audioUrl;
+
+        try {
+            audio.defaultPlaybackRate = rate;
+            audio.playbackRate = rate;
+            audio.onplay = () => {
+                audio.playbackRate = rate;
+            };
+        } catch (e) {
+            console.warn("Set playbackRate failed:", e);
+        }
 
         const playPromise = audio.play();
         if (playPromise?.catch) {
@@ -4472,8 +4623,40 @@ function playAudioUrl(audioUrl) {
 
 // 处理 getOrFetchAudio 函数。
 async function getOrFetchAudio(text, rate = 1) {
-    const cacheKey = buildAudioCacheKey(text, rate);
-    return getCachedAudio(cacheKey) || await fetchYoudaoSpeech(text, rate, cacheKey);
+    const cacheKey = buildAudioCacheKey(text, 1);
+    const cached = getCachedAudio(cacheKey);
+    if (cached) return cached;
+
+    // 第一重：自建 Mimo TTS 中转 (最贵的免费中转)
+    try {
+        const dataUrl = await fetchMimoSpeech(text);
+        saveCachedAudio(cacheKey, dataUrl);
+        return dataUrl;
+    } catch (mimoErr) {
+        console.warn("Mimo TTS failed, trying Youdao fallback:", mimoErr);
+    }
+
+    // 第二重：有道云 TTS (如果有配置密钥)
+    const hasYoudaoConfig = !!(appState.config.ttsSecret || YOUDAO_TTS_CONFIG.fallbackSecret);
+    if (hasYoudaoConfig) {
+        try {
+            const dataUrl = await fetchYoudaoSpeech(text, cacheKey);
+            return dataUrl;
+        } catch (youdaoErr) {
+            console.warn("Youdao TTS failed, trying Kokoro fallback:", youdaoErr);
+            showToast("主读音通道均失败，正在切换备用通道。", "info");
+        }
+    }
+
+    // 第三重：免费 Kokoro TTS (6767.chat API)
+    try {
+        const dataUrl = await fetchKokoroSpeech(text);
+        saveCachedAudio(cacheKey, dataUrl);
+        return dataUrl;
+    } catch (kokoroErr) {
+        console.error("All TTS channels failed:", kokoroErr);
+        throw kokoroErr;
+    }
 }
 
 // 处理 stopCurrentAudio 函数。
@@ -4486,7 +4669,7 @@ function stopCurrentAudio() {
         appState.audioStopResolver();
     }
 
-    if (appState.audioUrl && appState.audioUrl.startsWith("blob:")) {
+    if (!appState.audioSkipRevoke && appState.audioUrl && appState.audioUrl.startsWith("blob:")) {
         URL.revokeObjectURL(appState.audioUrl);
         appState.audioUrl = "";
     }
@@ -4498,22 +4681,80 @@ function clearCurrentAudio(token = "") {
         return;
     }
 
-    if (appState.audioUrl && appState.audioUrl.startsWith("blob:")) {
+    if (!appState.audioSkipRevoke && appState.audioUrl && appState.audioUrl.startsWith("blob:")) {
         URL.revokeObjectURL(appState.audioUrl);
     }
 
     if (appState.audio) {
         appState.audio.onended = null;
         appState.audio.onerror = null;
+        appState.audio.onplay = null;
     }
 
     appState.audioStopResolver = null;
     appState.audioPlayToken = "";
     appState.audioUrl = "";
+    appState.audioSkipRevoke = false;
+}
+
+// Mimo TTS 代理配置
+const MIMO_TTS_CONFIG = {
+    endpoint: "https://6767.chat/api/tts-proxy/mimo",
+    timeout: 15000,
+    voice: "Chloe"
+};
+
+// Mimo TTS (自建中转)
+async function fetchMimoSpeech(text) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), MIMO_TTS_CONFIG.timeout);
+    try {
+        const response = await fetch(MIMO_TTS_CONFIG.endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                text: String(text || "").trim(),
+                voice: MIMO_TTS_CONFIG.voice
+            }),
+            signal: controller.signal
+        });
+        if (!response.ok) {
+            throw new Error(`Mimo HTTP ${response.status}`);
+        }
+        const blob = await response.blob();
+        return await blobToDataUrl(blob);
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// Kokoro TTS 请求（主服务，10s 超时）。
+async function fetchKokoroSpeech(text) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), KOKORO_TTS_CONFIG.timeout);
+    try {
+        const response = await fetch(KOKORO_TTS_CONFIG.endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                text: String(text || "").trim(),
+                voice: KOKORO_TTS_CONFIG.voice,
+                format: KOKORO_TTS_CONFIG.format
+            }),
+            signal: controller.signal
+        });
+        if (!response.ok) throw new Error(`Kokoro HTTP ${response.status}`);
+        const blob = await response.blob();
+        return await blobToDataUrl(blob);
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
 // 处理 fetchYoudaoSpeech 函数。
-async function fetchYoudaoSpeech(text, rate, cacheKey = "") {
+async function fetchYoudaoSpeech(text, cacheKey = "") {
     const q = String(text || "").trim();
     const appSecret = appState.config.ttsSecret || YOUDAO_TTS_CONFIG.fallbackSecret;
 
@@ -4529,8 +4770,8 @@ async function fetchYoudaoSpeech(text, rate, cacheKey = "") {
     let lastError = null;
     for (let attempt = 1; attempt <= AUDIO_RETRY_CONFIG.maxAttempts; attempt += 1) {
         try {
-            const dataUrl = await fetchYoudaoSpeechOnce(q, rate, appSecret);
-            saveCachedAudio(cacheKey || buildAudioCacheKey(text, rate), dataUrl);
+            const dataUrl = await fetchYoudaoSpeechOnce(q, appSecret);
+            saveCachedAudio(cacheKey || buildAudioCacheKey(text, 1), dataUrl);
             return dataUrl;
         } catch (error) {
             lastError = error;
@@ -4547,7 +4788,7 @@ async function fetchYoudaoSpeech(text, rate, cacheKey = "") {
 }
 
 // 处理 fetchYoudaoSpeechOnce 函数。
-async function fetchYoudaoSpeechOnce(q, rate, appSecret) {
+async function fetchYoudaoSpeechOnce(q, appSecret) {
     const salt = createId();
     const curtime = Math.floor(Date.now() / 1000).toString();
     const input = buildYoudaoInput(q);
@@ -4560,7 +4801,6 @@ async function fetchYoudaoSpeechOnce(q, rate, appSecret) {
         signType: "v3",
         curtime,
         format: "mp3",
-        speed: formatYoudaoSpeed(rate),
         volume: "1.00",
         voiceName: "youxiaomei"
     });
@@ -4680,15 +4920,10 @@ function buildAudioJobs(target) {
     return (Array.isArray(target) ? target : [target])
         .filter(Boolean)
         .flatMap(lesson => getLessonExpressionAudioTexts(lesson))
-        .flatMap(text => [{
-            text,
-            rate: 0.72
-        },
-        {
+        .map(text => ({
             text,
             rate: 1
-        }
-    ]);
+        }));
 }
 
 // 执行统一的读音预热流程。
@@ -4777,17 +5012,27 @@ function loadConfig() {
     try {
         const saved = StorageRepo.config.load();
         const parsed = parseCombinedPassword(saved.password || saved.apiKey || "");
+        const localKey = localStorage.getItem('apiKey') || '';
+        const localBase = localStorage.getItem('apiBase') || '';
+        const localModel = localStorage.getItem('model') || '';
         return {
             ...DEFAULT_CONFIG,
             ...parsed,
+            apiKey: localKey || parsed.apiKey || "",
+            apiBase: localBase || parsed.apiBase || DEFAULT_CONFIG.apiBase,
+            model: localModel || parsed.model || DEFAULT_CONFIG.model,
             ttsSecret: parsed.ttsSecret || normalizeCredential(saved.ttsSecret || ""),
-            model: DEFAULT_CONFIG.model,
-            fallbackModel: DEFAULT_CONFIG.fallbackModel,
-            apiBase: DEFAULT_CONFIG.apiBase
+            fallbackModel: DEFAULT_CONFIG.fallbackModel
         };
     } catch {
+        const localKey = localStorage.getItem('apiKey') || '';
+        const localBase = localStorage.getItem('apiBase') || '';
+        const localModel = localStorage.getItem('model') || '';
         return {
-            ...DEFAULT_CONFIG
+            ...DEFAULT_CONFIG,
+            apiKey: localKey || DEFAULT_CONFIG.apiKey,
+            apiBase: localBase || DEFAULT_CONFIG.apiBase,
+            model: localModel || DEFAULT_CONFIG.model
         };
     }
 }
@@ -4815,12 +5060,58 @@ function readConfigFromInputs() {
         ttsSecret: appState.config.ttsSecret || ""
     };
 
+    const localKey = localStorage.getItem('apiKey') || '';
+    const localBase = localStorage.getItem('apiBase') || '';
+    const localModel = localStorage.getItem('model') || '';
+
     return {
-        apiBase: DEFAULT_CONFIG.apiBase,
+        apiBase: localBase || DEFAULT_CONFIG.apiBase,
         ...parsed,
-        model: DEFAULT_CONFIG.model,
+        apiKey: localKey || parsed.apiKey || "",
+        model: localModel || DEFAULT_CONFIG.model,
         fallbackModel: DEFAULT_CONFIG.fallbackModel
     };
+}
+
+// 处理 hydrateAdvancedConfigInputs 函数。
+function hydrateAdvancedConfigInputs() {
+    const key = localStorage.getItem('apiKey') || appState.config?.apiKey || '';
+    const base = localStorage.getItem('apiBase') || appState.config?.apiBase || '';
+    const model = localStorage.getItem('model') || appState.config?.model || '';
+
+    const keyInput = document.getElementById('cfg-key');
+    const baseInput = document.getElementById('cfg-base');
+    const modelInput = document.getElementById('cfg-model');
+
+    if (keyInput) keyInput.value = key;
+    if (baseInput) baseInput.value = base;
+    if (modelInput) modelInput.value = model;
+}
+
+// 处理 saveAdvancedConfig 函数。
+function saveAdvancedConfig() {
+    const key = document.getElementById('cfg-key')?.value.trim() || '';
+    const base = document.getElementById('cfg-base')?.value.trim() || '';
+    const model = document.getElementById('cfg-model')?.value.trim() || '';
+
+    if (key) localStorage.setItem('apiKey', key);
+    else localStorage.removeItem('apiKey');
+
+    if (base) localStorage.setItem('apiBase', base);
+    else localStorage.removeItem('apiBase');
+
+    if (model) localStorage.setItem('model', model);
+    else localStorage.removeItem('model');
+
+    appState.config = {
+        apiKey: key || appState.config?.apiKey || '',
+        apiBase: base || appState.config?.apiBase || DEFAULT_CONFIG.apiBase,
+        model: model || appState.config?.model || 'deepseek-chat',
+        ttsSecret: appState.config?.ttsSecret || '',
+    };
+
+    showToast('高级配置已保存', 'success');
+    closeSheet("advancedSettings");
 }
 
 // 处理 loadExpressions 函数。
