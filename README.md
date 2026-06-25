@@ -45,32 +45,36 @@ GitHub 仓库：[https://github.com/connectedGraph/AIED-DuoGrow-SaaS](https://gi
 
 ---
 
-## 接口与密码格式
+## 接口与密码配置
 
-### 文本生成
+### 文本生成与大模型配置
 
-使用 OpenAI-compatible API。当前 `baseUrl` 和 `model` 写在配置常量中，页面不提供自由配置入口，方便非技术用户（如父母）直接使用。
+*   **默认配置**：默认使用 DeepSeek API（`apiBase`: `https://api.deepseek.com`，`model`: `deepseek-v4-flash`），方便非技术用户（如父母）一键直接使用。
+*   **高级配置**：在此版本中，点击右上角的 **⚙️ 高级配置** 可打开弹窗，自定义配置您的 **API Key**、**Base URL**（支持各类 OpenAI-compatible 兼容接口）以及 **模型名称 (Model)**。
 
-### 语音 (TTS) API
+### 语音 (TTS) 与评测 API
 
-语音使用 **有道智云 (YOUDAO)** 的外部 TTS API，`baseUrl` 为 `https://openapi.youdao.com/ttsapi`。
+语音发音默认支持多重自动降级机制，保证在不同环境下的优质体验：
+1.  **第一重：自建 Mimo TTS 中转**（首选免费通道，音色优美）。
+2.  **第二重：有道智云 (YOUDAO) TTS API**（需配置密钥，作为备用）。
+3.  **第三重：免费 Kokoro TTS 接口**（最终兜底通道）。
 
-> 💡 **福利提示**：有道智云目前有**注册送 60 元体验金**的活动，羊毛不薅白不薅。~~（有道智云打钱！）~~
-> *为什么不用浏览器自带语音？* 移动端和微信 WebView 的内置语音能力极不稳定，音色、发音质量和可用性都很差。使用靠谱的外部语音 API 才能保证可复听、可缓存的优质体验。
+口语跟读评测直接调用专有 API 进行发音分值和单词级发音高亮分析。
 
-### 密码格式
+### 密码/密钥输入格式
 
-右上角密码框输入的是一整串组合密码，格式如下：
+右上角密码框输入支持以下格式，系统会自动兼容并智能解析：
 
-```text
-sk-xxxx-yyyy
-```
+1.  **直接输入 DeepSeek/OpenAI 密钥 (推荐，给妈妈最快直接使用)**
+    直接填入 API Key 即可，例如：`sk-xxxxxxxxxxxx`。
+    在此模式下，大模型对话可直接调通，语音部分将自动通过 Mimo/Kokoro 免费通道加载，无需配置有道密钥。
+2.  **输入组合密码（混合兼容格式）**
+    格式为：`sk-xxxx-yyyy`（由减号连接）。
+    *   前半部分 `sk-xxxx` 会被解析为文本生成 API Key。
+    *   最后一段 `yyyy` 会被解析为有道语音 API Secret。
+3.  **使用高级配置面板直接输入**
+    打开“⚙️ 高级配置”面板，分别在输入框中填入并保存。
 
-**解析规则**：
-
-* 前半部分 `sk-xxxx` 会作为 OpenAI-compatible API Key。
-* 最后一段 `yyyy` 会作为有道语音 API Secret。
-* README 不提供真实密钥，请自行从对应服务商后台获取。
 
 ---
 
